@@ -28,7 +28,9 @@ var configPath = "config.json"
 var env = Debug
 var bot *tgbotapi.BotAPI
 
-const subredditRegex = `(\/)?r\/([a-zA-Z0-9_\-]*)`
+const subredditRegex = `(\/)?([ru])\/([a-zA-Z0-9_\-]*)`
+const sublinkNum = 2
+const subspecNum = 3
 
 func (e *Environment) UnmarshalJSON(data []byte) error {
 	var str string
@@ -116,8 +118,9 @@ func main() {
 			s := ""
 			for _, m := range matches {
 				// m[2] is the name of the subreddit
-				sub := m[2]
-				s += fmt.Sprintf("/r/%s: https://reddit.com/r/%s\n", sub, sub)
+				link := m[sublinkNum]
+				sub := m[subspecNum]
+				s += fmt.Sprintf("/%s/%s: https://reddit.com/%s/%s\n", link, sub, link, sub)
 			}
 
 			reply := tgbotapi.NewMessage(msg.Chat.ID, s)
