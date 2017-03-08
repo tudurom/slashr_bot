@@ -75,9 +75,6 @@ func initBotAPI(token string, env Environment) error {
 	if err != nil {
 		return err
 	}
-	if env == Debug {
-		bot.Debug = true
-	}
 	logrus.WithField("username", bot.Self.UserName).Debug("Successfully connected to Telegram API")
 	return nil
 }
@@ -88,9 +85,9 @@ func main() {
 
 	err := conf.readConfig(configPath)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"configPath": configPath,
-		}).Fatalf("Failed to read config file: %v", err)
+		logrus.WithField(
+			"configPath", configPath,
+		).Fatalf("Failed to read config file: %v", err)
 	}
 	initLogger(conf.Env)
 	err = initBotAPI(conf.Token, conf.Env)
@@ -117,7 +114,8 @@ func main() {
 		if len(matches) > 0 {
 			s := ""
 			for _, m := range matches {
-				// m[2] is the name of the subreddit
+				// get sublink and sub/user from regex match
+				logrus.WithField("match", m[0]).Debug("Got match")
 				link := m[sublinkNum]
 				sub := m[subspecNum]
 				s += fmt.Sprintf("/%s/%s: https://reddit.com/%s/%s\n", link, sub, link, sub)
@@ -126,7 +124,10 @@ func main() {
 			reply := tgbotapi.NewMessage(msg.Chat.ID, s)
 			reply.ReplyToMessageID = msg.MessageID
 
-			bot.Send(reply)
+			_, err = bot.Send(reply)
+			if err != nil {
+				logrus.Infof("Couldn't send message: %v", err)
+			}
 		}
 	}
 }
