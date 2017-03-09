@@ -118,11 +118,12 @@ func main() {
 				logrus.WithField("match", m[0]).Debug("Got match")
 				link := m[sublinkNum]
 				sub := m[subspecNum]
-				s += fmt.Sprintf("/%s/%s: https://reddit.com/%s/%s\n", link, sub, link, sub)
+				s += fmt.Sprintf("[/%s/%s](https://reddit.com/%s/%s)\n", link, sub, link, sub)
 			}
 
 			reply := tgbotapi.NewMessage(msg.Chat.ID, s)
 			reply.ReplyToMessageID = msg.MessageID
+			reply.ParseMode = "markdown"
 
 			_, err = bot.Send(reply)
 			if err != nil {
