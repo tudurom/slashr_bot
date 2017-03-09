@@ -28,7 +28,7 @@ var configPath = "config.json"
 var env = Debug
 var bot *tgbotapi.BotAPI
 
-const subredditRegex = `(\/)?([ru])\/([a-zA-Z0-9_\-]*)`
+const subredditRegex = `(?:\A|\s)(\/)?([ru])\/([a-zA-Z0-9_\-]*)(?:\s|\z)`
 const sublinkNum = 2
 const subspecNum = 3
 
