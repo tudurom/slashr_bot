@@ -28,9 +28,7 @@ var configPath = "config.json"
 var env = Debug
 var bot *tgbotapi.BotAPI
 
-const subredditRegex = `(?:\A|\s)(\/)?([ru])\/([a-zA-Z0-9_\-]*)(?:\s|\z)`
-const sublinkNum = 2
-const subspecNum = 3
+const subredditRegex = `(?:\A|\s)(?:\/)?(?P<sublink>[ru])\/(?P<subspec>[a-zA-Z0-9_\-]*)(?:\s|\z)`
 
 func (e *Environment) UnmarshalJSON(data []byte) error {
 	var str string
@@ -116,8 +114,14 @@ func main() {
 			for _, m := range matches {
 				// get sublink and sub/user from regex match
 				logrus.WithField("match", m[0]).Debug("Got match")
-				link := m[sublinkNum]
-				sub := m[subspecNum]
+				result := make(map[string]string)
+				for i, name := range rx.SubexpNames() {
+					if i != 0 {
+						result[name] = m[i]
+					}
+				}
+				link := result["sublink"]
+				sub := result["subspec"]
 				s += fmt.Sprintf("[/%s/%s](https://reddit.com/%s/%s)\n", link, sub, link, sub)
 			}
 
