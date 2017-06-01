@@ -108,6 +108,7 @@ func main() {
 		var q *tgbotapi.InlineQuery
 		if update.Message != nil {
 			msg = update.Message
+
 			text = msg.Text
 		} else if update.InlineQuery != nil {
 			q = update.InlineQuery
@@ -129,12 +130,28 @@ func main() {
 				}
 				link := result["sublink"]
 				sub := result["subspec"]
-				md := fmt.Sprintf("[/%s/%s](https://reddit.com/%s/%s)", link, sub, link, sub)
-				s += md + "\n"
+				newlink := fmt.Sprintf("https://reddit.com/%s/%s", link, sub)
+				md := fmt.Sprintf("[/%s/%s](%s)", link, sub, newlink)
+
+				if update.Message != nil {
+					foundEntity := false
+					if msg.Entities != nil {
+						for _, ent := range *msg.Entities {
+							if ent.URL == newlink {
+								foundEntity = true
+								break
+							}
+						}
+					}
+					if !foundEntity {
+						s += md + "\n"
+					}
+				}
+
 				text = string(rx.ReplaceAll([]byte(text), []byte(" "+md+" ")))
 			}
 
-			if update.Message != nil {
+			if update.Message != nil && s != "" {
 				reply := tgbotapi.NewMessage(msg.Chat.ID, s)
 				reply.ReplyToMessageID = msg.MessageID
 				reply.ParseMode = "markdown"
