@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"gopkg.in/telegram-bot-api.v4"
@@ -21,7 +22,7 @@ type Environment int
 
 const (
 	Debug      Environment = iota
-	Production             = iota
+	Production Environment = iota
 )
 
 var configPath = "config.json"
@@ -102,11 +103,17 @@ func main() {
 	}
 
 	for update := range updates {
-		if update.Message == nil {
-			continue
+		var text string
+		var msg *tgbotapi.Message
+		var q *tgbotapi.InlineQuery
+		if update.Message != nil {
+			msg = update.Message
+			text = msg.Text
+		} else if update.InlineQuery != nil {
+			q = update.InlineQuery
+			text = q.Query
 		}
-		msg := update.Message
-		matches := rx.FindAllStringSubmatch(msg.Text, -1)
+		matches := rx.FindAllStringSubmatch(text, -1)
 
 		// Found subreddits
 		if len(matches) > 0 {
@@ -122,17 +129,33 @@ func main() {
 				}
 				link := result["sublink"]
 				sub := result["subspec"]
-				s += fmt.Sprintf("[/%s/%s](https://reddit.com/%s/%s)\n", link, sub, link, sub)
+				md := fmt.Sprintf("[/%s/%s](https://reddit.com/%s/%s)", link, sub, link, sub)
+				s += md + "\n"
+				text = string(rx.ReplaceAll([]byte(text), []byte(" "+md+" ")))
 			}
 
-			reply := tgbotapi.NewMessage(msg.Chat.ID, s)
-			reply.ReplyToMessageID = msg.MessageID
-			reply.ParseMode = "markdown"
+			if update.Message != nil {
+				reply := tgbotapi.NewMessage(msg.Chat.ID, s)
+				reply.ReplyToMessageID = msg.MessageID
+				reply.ParseMode = "markdown"
 
-			_, err = bot.Send(reply)
+				_, err = bot.Send(reply)
+			} else if update.InlineQuery != nil {
+				doc := tgbotapi.NewInlineQueryResultArticleMarkdown(time.Now().Format("slashr_%s"), "Result", text)
+				doc.Description = text
+				results := make([]interface{}, 1)
+				results[0] = doc
+				ic := tgbotapi.InlineConfig{}
+				ic.InlineQueryID = q.ID
+				ic.Results = results
+				ic.IsPersonal = true
+				ic.CacheTime = 86400
+				_, err = bot.AnswerInlineQuery(ic)
+			}
 			if err != nil {
 				logrus.Infof("Couldn't send message: %v", err)
 			}
+
 		}
 	}
 }
